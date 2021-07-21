@@ -93,7 +93,8 @@ is specified, the minimum of `spec.expirationSeconds` and `ClusterSigningDuratio
 used.
 
 {{< note >}}
-The `spec.expirationSeconds` field was added in Kubernetes v1.22.  Consequently, earlier versions of Kubernetes will not honor this field.
+The `spec.expirationSeconds` field was added in Kubernetes v1.22.  Earlier versions of Kubernetes do not honor this field.
+Kubernetes API servers prior to v1.22 will silently drop this field when the object is created.
 {{< /note >}}
 
 ### Kubernetes signers
@@ -156,7 +157,8 @@ Failures for all of these are only reported in kube-controller-manager logs.
 {{< /note >}}
 
 {{< note >}}
-The `spec.expirationSeconds` field was added in Kubernetes v1.22.  Consequently, earlier versions of Kubernetes will not honor this field.
+The `spec.expirationSeconds` field was added in Kubernetes v1.22.  Earlier versions of Kubernetes do not honor this field.
+Kubernetes API servers prior to v1.22 will silently drop this field when the object is created.
 {{< /note >}}
 
 Distribution of trust happens out of band for these signers.  Any trust outside of those described above are strictly
@@ -396,7 +398,8 @@ were marked as approved.
 {{< /note >}}
 
 {{< note >}}
-The `spec.expirationSeconds` field was added in Kubernetes v1.22.  Consequently, earlier versions of Kubernetes will not honor this field.
+The `spec.expirationSeconds` field was added in Kubernetes v1.22.  Earlier versions of Kubernetes do not honor this field.
+Kubernetes API servers prior to v1.22 will silently drop this field when the object is created.
 {{< /note >}}
 
 ### API-based signers {#signer-api}
