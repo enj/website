@@ -32,8 +32,9 @@ The CertificateSigningRequest object includes a PEM-encoded PKCS#10 signing requ
 the `spec.request` field. The CertificateSigningRequest denotes the signer (the
 recipient that the request is being made to) using the `spec.signerName` field.
 Note that `spec.signerName` is a required key after API version `certificates.k8s.io/v1`.
-The client may optionally set the `spec.expirationSeconds` to request a particular
-lifetime for the issued certificate.
+In Kubernetes v1.22 and later, clients may optionally set the `spec.expirationSeconds`
+field to request a particular lifetime for the issued certificate.  The minimum valid
+value for this field is `600`, i.e. ten minutes.
 
 Once created, a CertificateSigningRequest must be approved before it can be signed.
 Depending on the signer selected, a CertificateSigningRequest may be automatically approved
@@ -83,8 +84,8 @@ that case, the documentation for the signer should specify the meaning of
 additional certificates; for example, this might be the certificate plus
 intermediates to be presented during TLS handshakes.
 
-The PKCS#10 signing request format does not allow to specify a certificate
-expiration or lifetime. The expiration or lifetime therefore has to be set
+The PKCS#10 signing request format does not have a standard mechanism to specify a
+certificate expiration or lifetime. The expiration or lifetime therefore has to be set
 through the `spec.expirationSeconds` field of the CSR object. The built-in signers
 use the `ClusterSigningDuration` configuration option, which defaults to 1 year,
 (the `--cluster-signing-duration` command-line flag of the kube-controller-manager)
