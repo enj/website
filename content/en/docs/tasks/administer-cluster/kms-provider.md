@@ -30,13 +30,11 @@ you have selected.
 {{< feature-state for_k8s_version="v1.12" state="beta" >}}
 
 ### KMS v2
-* Kubernetes version 1.25.0 or later is required
+{{< feature-state for_k8s_version="v1.27" state="beta" >}}
 
-* Set kube-apiserver feature gate: `--feature-gates=KMSv2=true` to configure a KMS v2 provider
+* For version 1.25 and 1.26, enabling the feature via kube-apiserver feature gate is required: `--feature-gates=KMSv2=true` to configure a KMS v2 provider
 
 * Your cluster must use etcd v3 or later
-
-{{< feature-state for_k8s_version="v1.25" state="alpha" >}}
 
 <!-- steps -->
 
@@ -90,20 +88,20 @@ you use a proto file to create a stub file that you can use to develop the gRPC 
 
 #### KMS v1 {#developing-a-kms-plugin-gRPC-server-kms-v1}
 * Using Go: Use the functions and data structures in the stub file:
-  [api.pb.go](https://github.com/kubernetes/kubernetes/blob/release-1.25/staging/src/k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1/api.pb.go)
+  [api.pb.go](https://github.com/kubernetes/kubernetes/blob/release-1.27/staging/src/k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1/api.pb.go)
   to develop the gRPC server code 
 
 * Using languages other than Go: Use the protoc compiler with the proto file:
-  [api.proto](https://github.com/kubernetes/kubernetes/blob/release-1.25/staging/src/k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1/api.proto)
+  [api.proto](https://github.com/kubernetes/kubernetes/blob/release-1.27/staging/src/k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1/api.proto)
   to generate a stub file for the specific language
 
 #### KMS v2 {#developing-a-kms-plugin-gRPC-server-kms-v2}
 * Using Go: Use the functions and data structures in the stub file:
-  [api.pb.go](https://github.com/kubernetes/kubernetes/blob/release-1.25/staging/src/k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v2alpha1/api.pb.go)
+  [api.pb.go](https://github.com/kubernetes/kubernetes/blob/release-1.27/staging/src/k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v2beta1/api.pb.go)
   to develop the gRPC server code 
 
 * Using languages other than Go: Use the protoc compiler with the proto file:
-  [api.proto](https://github.com/kubernetes/kubernetes/blob/release-1.25/staging/src/k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v2alpha1/api.proto)
+  [api.proto](https://github.com/kubernetes/kubernetes/blob/release-1.27/staging/src/k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v2beta1/api.proto)
   to generate a stub file for the specific language
 
 Then use the functions and data structures in the stub file to develop the server code.
@@ -124,9 +122,9 @@ Then use the functions and data structures in the stub file to develop the serve
   The plugin is implemented as a gRPC server that listens at UNIX domain socket. The plugin deployment should create a file on the file system to run the gRPC unix domain socket connection. The API server (gRPC client) is configured with the KMS provider (gRPC server) unix domain socket endpoint in order to communicate with it. An abstract Linux socket may be used by starting the endpoint with `/@`, i.e. `unix:///@foo`. Care must be taken when using this type of socket as they do not have concept of ACL (unlike traditional file based sockets). However, they are subject to Linux networking namespace, so will only be accessible to containers within the same pod unless host networking is used.
 
 ##### KMS v2 {#developing-a-kms-plugin-gRPC-server-notes-kms-v2}
-* kms plugin version: `v2alpha1`
+* KMS plugin version: `v2beta1`
 
-  In response to procedure call Status, a compatible KMS plugin should return `v2alpha1` as `StatusResponse.Version`, "ok" as `StatusResponse.Healthz` and a keyID (KMS KEK ID) as `StatusResponse.KeyID`
+  In response to procedure call Status, a compatible KMS plugin should return `v2beta1` as `StatusResponse.Version`, "ok" as `StatusResponse.Healthz` and a keyID (KMS KEK ID) as `StatusResponse.KeyID`
 
 * protocol: UNIX domain socket (`unix`)
 
