@@ -77,7 +77,7 @@ To implement a KMS plugin, you can develop a new plugin gRPC server or enable a 
 already provided by your cloud provider.
 You then integrate the plugin with the remote KMS and deploy it on the Kubernetes master.
 
-### Enabling the KMS supported by your cloud provider 
+### Enabling the KMS supported by your cloud provider
 
 Refer to your cloud provider for instructions on enabling the cloud provider-specific KMS plugin.
 
@@ -88,20 +88,20 @@ you use a proto file to create a stub file that you can use to develop the gRPC 
 
 #### KMS v1 {#developing-a-kms-plugin-gRPC-server-kms-v1}
 * Using Go: Use the functions and data structures in the stub file:
-  [api.pb.go](https://github.com/kubernetes/kubernetes/blob/release-1.27/staging/src/k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1/api.pb.go)
+  [api.pb.go](https://github.com/kubernetes/kms/blob/release-{{< skew currentVersion >}}/apis/v1beta1/api.pb.go)
   to develop the gRPC server code 
 
 * Using languages other than Go: Use the protoc compiler with the proto file:
-  [api.proto](https://github.com/kubernetes/kubernetes/blob/release-1.27/staging/src/k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v1beta1/api.proto)
+  [api.proto](https://github.com/kubernetes/kms/blob/release-{{< skew currentVersion >}}/apis/v1beta1/api.proto)
   to generate a stub file for the specific language
 
 #### KMS v2 {#developing-a-kms-plugin-gRPC-server-kms-v2}
 * Using Go: Use the functions and data structures in the stub file:
-  [api.pb.go](https://github.com/kubernetes/kubernetes/blob/release-1.27/staging/src/k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v2beta1/api.pb.go)
+  [api.pb.go](https://github.com/kubernetes/kms/blob/release-{{< skew currentVersion >}}/apis/v2/api.pb.go)
   to develop the gRPC server code 
 
 * Using languages other than Go: Use the protoc compiler with the proto file:
-  [api.proto](https://github.com/kubernetes/kubernetes/blob/release-1.27/staging/src/k8s.io/apiserver/pkg/storage/value/encrypt/envelope/v2beta1/api.proto)
+  [api.proto](https://github.com/kubernetes/kms/blob/release-{{< skew currentVersion >}}/apis/v2/api.proto)
   to generate a stub file for the specific language
 
 Then use the functions and data structures in the stub file to develop the server code.
@@ -137,7 +137,7 @@ All configuration data, including authentication credentials the KMS plugin uses
 are stored and managed by the KMS plugin independently.
 The KMS plugin can encode the ciphertext with additional metadata that may be required before sending it to the KMS for decryption.
 
-### Deploying the KMS plugin 
+### Deploying the KMS plugin
 
 Ensure that the KMS plugin runs on the same host(s) as the Kubernetes master(s).
 
