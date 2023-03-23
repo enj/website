@@ -182,7 +182,7 @@ Then use the functions and data structures in the stub file to develop the serve
 
   The API server considers the `key_id` returned from the `Status` procedure call to be authoritative.  Thus, a change
   to this value signals to the API server that the remote KEK has changed, and data encrypted with the old KEK should
-  be marked stale when a no-op write is performed (as describe below).  If an `EncryptRequest` procedure call returns a
+  be marked stale when a no-op write is performed (as described below).  If an `EncryptRequest` procedure call returns a
   `key_id` that is different from `Status`, the response is thrown away and the plugin is considered unhealthy.  Thus
   implementations must guarantee that the `key_id` returned from `Status` will be the same as the one returned by
   `EncryptRequest`.  Furthermore, plugins must ensure that the `key_id` is stable and does not flip-flop between values
