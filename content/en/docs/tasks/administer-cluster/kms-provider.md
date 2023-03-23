@@ -64,7 +64,7 @@ To configure a KMS provider on the API server, include a provider of type `kms` 
 `providers` array in the encryption configuration file and set the following properties:
 
 ### KMS v1 {#configuring-the-kms-provider-kms-v1}
-* `apiVersion`: API Version for KMS provider. Leave this value empty.
+* `apiVersion`: API Version for KMS provider. Leave this value empty or set it to `v1`.
 * `name`: Display name of the KMS plugin. Cannot be changed once set.
 * `endpoint`: Listen address of the gRPC server (KMS plugin). The endpoint is a UNIX domain socket.
 * `cachesize`: Number of data encryption keys (DEKs) to be cached in the clear.
