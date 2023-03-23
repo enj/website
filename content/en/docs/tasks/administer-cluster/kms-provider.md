@@ -6,7 +6,9 @@ title: Using a KMS provider for data encryption
 content_type: task
 ---
 <!-- overview -->
-This page shows how to configure a Key Management Service (KMS) provider and plugin to enable secret data encryption. Currently there are two KMS API versions. KMS v1 will continue to work while v2 develops in maturity. If you are not sure which KMS API version to pick, choose v1. 
+This page shows how to configure a Key Management Service (KMS) provider and plugin to enable secret data encryption.
+Currently there are two KMS API versions. New integrations should use KMS v2 as it offers significantly
+better performance characteristics than v1.
 
 ## {{% heading "prerequisites" %}}
 
@@ -36,12 +38,23 @@ you have selected.
 
 * Your cluster must use etcd v3 or later
 
+{{< note >}}
+
+The KMS v2 API and implementation changed in incompatible ways in-between the alpha release in v1.25
+and the beta release in v1.27.  Attempting to upgrade between these versions with the alpha feature
+enabled will result in data loss.
+
+{{< /note >}}
+
 <!-- steps -->
 
 The KMS encryption provider uses an envelope encryption scheme to encrypt data in etcd.
-The data is encrypted using a data encryption key (DEK); a new DEK is generated for each encryption.
+The data is encrypted using a data encryption key (DEK).
 The DEKs are encrypted with a key encryption key (KEK) that is stored and managed in a remote KMS.
-The KMS provider uses gRPC to communicate with a specific KMS plugin.
+With KMS v1, a new DEK is generated for each encryption.
+With KMS v2, a new DEK is generated on server startup and when the KMS plugin informs the API server
+that a KEK rotation has occurred (see `key_id` section below).
+The KMS provider uses gRPC to communicate with a specific KMS plugin over a UNIX domain socket.
 The KMS plugin, which is implemented as a gRPC server and deployed on the same host(s)
 as the Kubernetes control plane, is responsible for all communication with the remote KMS.
 
@@ -51,6 +64,7 @@ To configure a KMS provider on the API server, include a provider of type `kms` 
 `providers` array in the encryption configuration file and set the following properties:
 
 ### KMS v1 {#configuring-the-kms-provider-kms-v1}
+* `apiVersion`: API Version for KMS provider. Leave this value empty.
 * `name`: Display name of the KMS plugin. Cannot be changed once set.
 * `endpoint`: Listen address of the gRPC server (KMS plugin). The endpoint is a UNIX domain socket.
 * `cachesize`: Number of data encryption keys (DEKs) to be cached in the clear.
@@ -60,14 +74,15 @@ To configure a KMS provider on the API server, include a provider of type `kms` 
   returning an error (default is 3 seconds).
 
 ### KMS v2 {#configuring-the-kms-provider-kms-v2}
-* `apiVersion`: API Version for KMS provider (Allowed values: v2, v1 or empty. Any other value will result in an error.)  Must be set to v2 to use the KMS v2 APIs.
+* `apiVersion`: API Version for KMS provider. Set this to `v2`.
 * `name`: Display name of the KMS plugin. Cannot be changed once set.
 * `endpoint`: Listen address of the gRPC server (KMS plugin). The endpoint is a UNIX domain socket.
-* `cachesize`: Number of data encryption keys (DEKs) to be cached in the clear.
-  When cached, DEKs can be used without another call to the KMS;
-  whereas DEKs that are not cached require a call to the KMS to unwrap.
 * `timeout`: How long should `kube-apiserver` wait for kms-plugin to respond before
   returning an error (default is 3 seconds).
+
+KMS v2 does not support the `cachesize` parameter. All data encryption keys (DEKs) will be cached in
+the clear once the server has unwrapped them via a call to the KMS. Once cached, DEKs can be used
+to perform decryption indefinitely without making a call to the KMS.
 
 See [Understanding the encryption at rest configuration](/docs/tasks/administer-cluster/encrypt-data).
 
@@ -96,7 +111,10 @@ you use a proto file to create a stub file that you can use to develop the gRPC 
   to generate a stub file for the specific language
 
 #### KMS v2 {#developing-a-kms-plugin-gRPC-server-kms-v2}
-* Using Go: Use the functions and data structures in the stub file:
+* Using Go: A high level
+  [library](https://github.com/kubernetes/kms/blob/release-{{< skew currentVersion >}}/pkg/service/interface.go)
+  is provided to make the process easier.  Low level implementations
+  can use the functions and data structures in the stub file:
   [api.pb.go](https://github.com/kubernetes/kms/blob/release-{{< skew currentVersion >}}/apis/v2/api.pb.go)
   to develop the gRPC server code 
 
@@ -115,7 +133,7 @@ Then use the functions and data structures in the stub file to develop the serve
 
 * message version: `v1beta1`
 
-  All messages from KMS provider have the version field set to current version v1beta1.
+  All messages from KMS provider have the version field set to `v1beta1`.
 
 * protocol: UNIX domain socket (`unix`)
 
@@ -124,7 +142,39 @@ Then use the functions and data structures in the stub file to develop the serve
 ##### KMS v2 {#developing-a-kms-plugin-gRPC-server-notes-kms-v2}
 * KMS plugin version: `v2beta1`
 
-  In response to procedure call Status, a compatible KMS plugin should return `v2beta1` as `StatusResponse.Version`, "ok" as `StatusResponse.Healthz` and a keyID (KMS KEK ID) as `StatusResponse.KeyID`
+  In response to procedure call Status, a compatible KMS plugin should return `v2beta1` as `StatusResponse.version`,
+  "ok" as `StatusResponse.healthz` and a `key_id` (remote KMS KEK ID) as `StatusResponse.key_id`.
+
+  The API server polls the Status procedure call approximately every minute when everything is healthy,
+  and more frequently when the plugin is not healthy.  Plugins must take care to optimize this call as it will be
+  under constant load.
+
+* Encryption
+
+  The EncryptRequest procedure call provides the plaintext and a UID for logging purposes.  The response must include
+  the ciphertext, the `key_id` for the KEK used, and, optionally, any metadata that the KMS plugin needs to aid in
+  future DecryptRequest calls (via the `annotations` field).  The plugin must guarantee that any distinct plaintext
+  results in a distinct response `(ciphertext, key_id, annotations)`.
+
+  TODO annotations validation
+
+* Decryption
+
+  The DecryptRequest procedure call provides the `(ciphertext, key_id, annotations)` from EncryptRequest and a UID
+  for logging purposes.  As expected, it is the inverse of the EncryptRequest call.  Plugins must verify that the
+  `key_id` is one that they understand - they must not attempt to decrypt data unless they are sure that it was
+  encrypted by them at an earlier time.
+
+* Understanding `key_id`
+
+  The `key_id` is the public, non-secret name of the remote KMS KEK that is currently in use.  It may be logged
+  during regular operation of the API server, and thus must not contain any private data.  Plugin implementations
+  are encouraged to use a hash to avoid leaking any data.  The KMS v2 metrics take care to hash this value before
+  exposing it via the `/metrics` endpoint.
+
+  TODO Plugins must guarantee that the `key_id` returned from Status
+
+  TODO Rotation times
 
 * protocol: UNIX domain socket (`unix`)
 
@@ -135,7 +185,8 @@ Then use the functions and data structures in the stub file to develop the serve
 The KMS plugin can communicate with the remote KMS using any protocol supported by the KMS.
 All configuration data, including authentication credentials the KMS plugin uses to communicate with the remote KMS, 
 are stored and managed by the KMS plugin independently.
-The KMS plugin can encode the ciphertext with additional metadata that may be required before sending it to the KMS for decryption.
+The KMS plugin can encode the ciphertext with additional metadata that may be required before sending it to the KMS
+for decryption (KMS v2 makes this process easier by providing a dedicated `annotations` field).
 
 ### Deploying the KMS plugin
 
@@ -193,18 +244,17 @@ defined in a CustomResourceDefinition, your cluster must be running Kubernetes v
              apiVersion: v2
              name: myKmsPluginFoo
              endpoint: unix:///tmp/socketfile.sock
-             cachesize: 100
              timeout: 3s
          - kms:
+             apiVersion: v2
              name: myKmsPluginBar
              endpoint: unix:///tmp/socketfile.sock
-             cachesize: 100
              timeout: 3s
    ```
 
 Setting `--encryption-provider-config-automatic-reload` to `true` collapses all health checks to a single health check endpoint. Individual health checks are only available when KMS v1 providers are in use and the encryption config is not auto-reloaded.
 
-Following table summarizes the health check endpoints for each KMS version:
+The following table summarizes the health check endpoints for each KMS version:
 
 | KMS configurations        | Without Automatic Reload           | With Automatic Reload  |
 | ------------------------- |------------------------------------| -----------------------|
@@ -218,6 +268,10 @@ Following table summarizes the health check endpoints for each KMS version:
 `Individual Healthchecks` means that each KMS plugin has an associated health check endpoint based on its location in the encryption config: `/healthz/kms-provider-0`, `/healthz/kms-provider-1` etc.
 
 These healthcheck endpoint paths are hard coded and generated/controlled by the server. The indices for individual healthchecks corresponds to the order in which the KMS encryption config is processed.
+
+At a high level, restarting an API server when a KMS plugin is unhealthy is unlikely to make the situation better.
+It can make the situation significantly worse by throwing away the API server's DEK cache.  Thus the general
+recommendation is to ignore KMS healthz checks for liveness purposes, i.e. `/livez?exclude=kms-providers`.
 
 Until the steps defined in [Ensuring all secrets are encrypted](#ensuring-all-secrets-are-encrypted) are performed, the `providers` list should end with the `identity: {}` provider to allow unencrypted data to be read.  Once all resources are encrypted, the `identity` provider should be removed to prevent the API server from honoring unencrypted data.
 
@@ -256,7 +310,8 @@ you can use the `etcdctl` command line program to retrieve the contents of your 
 
 ## Ensuring all secrets are encrypted
 
-Because secrets are encrypted on write, performing an update on a secret encrypts that content.
+When encryption at rest is correctly configured, resources are encrypted on write.
+Thus we can perform an in-place no-op update to ensure that data is encrypted.
 
 The following command reads all secrets and then updates them to apply server side encryption.
 If an error occurs due to a conflicting write, retry the command.
@@ -280,9 +335,9 @@ To switch from a local encryption provider to the `kms` provider and re-encrypt 
          - secrets
        providers:
          - kms:
+             apiVersion: v2
              name : myKmsPlugin
              endpoint: unix:///tmp/socketfile.sock
-             cachesize: 100
          - aescbc:
              keys:
                - name: key1
@@ -312,9 +367,9 @@ To disable encryption at rest:
        providers:
          - identity: {}
          - kms:
+             apiVersion: v2
              name : myKmsPlugin
              endpoint: unix:///tmp/socketfile.sock
-             cachesize: 100
    ```
 
 1. Restart all `kube-apiserver` processes. 
