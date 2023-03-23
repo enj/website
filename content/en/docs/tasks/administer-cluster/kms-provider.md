@@ -80,7 +80,7 @@ To configure a KMS provider on the API server, include a provider of type `kms` 
 * `timeout`: How long should `kube-apiserver` wait for kms-plugin to respond before
   returning an error (default is 3 seconds).
 
-KMS v2 does not support the `cachesize` parameter. All data encryption keys (DEKs) will be cached in
+KMS v2 does not support the `cachesize` property. All data encryption keys (DEKs) will be cached in
 the clear once the server has unwrapped them via a call to the KMS. Once cached, DEKs can be used
 to perform decryption indefinitely without making a call to the KMS.
 
