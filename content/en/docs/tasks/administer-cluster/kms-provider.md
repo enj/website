@@ -142,28 +142,36 @@ Then use the functions and data structures in the stub file to develop the serve
 ##### KMS v2 {#developing-a-kms-plugin-gRPC-server-notes-kms-v2}
 * KMS plugin version: `v2beta1`
 
-  In response to procedure call Status, a compatible KMS plugin should return `v2beta1` as `StatusResponse.version`,
+  In response to procedure call `Status`, a compatible KMS plugin should return `v2beta1` as `StatusResponse.version`,
   "ok" as `StatusResponse.healthz` and a `key_id` (remote KMS KEK ID) as `StatusResponse.key_id`.
 
-  The API server polls the Status procedure call approximately every minute when everything is healthy,
+  The API server polls the `Status` procedure call approximately every minute when everything is healthy,
   and more frequently when the plugin is not healthy.  Plugins must take care to optimize this call as it will be
   under constant load.
 
 * Encryption
 
-  The EncryptRequest procedure call provides the plaintext and a UID for logging purposes.  The response must include
+  The `EncryptRequest` procedure call provides the plaintext and a UID for logging purposes.  The response must include
   the ciphertext, the `key_id` for the KEK used, and, optionally, any metadata that the KMS plugin needs to aid in
-  future DecryptRequest calls (via the `annotations` field).  The plugin must guarantee that any distinct plaintext
+  future `DecryptRequest` calls (via the `annotations` field).  The plugin must guarantee that any distinct plaintext
   results in a distinct response `(ciphertext, key_id, annotations)`.
 
-  TODO annotations validation
+  If the plugin returns a non-empty `annotations` map, all map keys must be fully qualified domain names such as
+  `example.com`.
+
+  The API server does not perform the `EncryptRequest` procedure call at a high rate.  Plugin implementations should
+  still aim to keep each request's latency at under 100 milliseconds.
 
 * Decryption
 
-  The DecryptRequest procedure call provides the `(ciphertext, key_id, annotations)` from EncryptRequest and a UID
-  for logging purposes.  As expected, it is the inverse of the EncryptRequest call.  Plugins must verify that the
+  The `DecryptRequest` procedure call provides the `(ciphertext, key_id, annotations)` from `EncryptRequest` and a UID
+  for logging purposes.  As expected, it is the inverse of the `EncryptRequest` call.  Plugins must verify that the
   `key_id` is one that they understand - they must not attempt to decrypt data unless they are sure that it was
   encrypted by them at an earlier time.
+
+  The API server may perform thousands of `DecryptRequest` procedure calls on startup to fill its watch cache.  Thus
+  plugin implementations must perform these calls as quickly as possible, and should aim to keep each request's latency
+  at under 10 milliseconds.
 
 * Understanding `key_id`
 
@@ -172,9 +180,25 @@ Then use the functions and data structures in the stub file to develop the serve
   are encouraged to use a hash to avoid leaking any data.  The KMS v2 metrics take care to hash this value before
   exposing it via the `/metrics` endpoint.
 
-  TODO Plugins must guarantee that the `key_id` returned from Status
+  The API server considers the `key_id` returned from the `Status` procedure call to be authoritative.  Thus, a change
+  to this value signals to the API server that the remote KEK has changed, and data encrypted with the old KEK should
+  be marked stale when a no-op write is performed (as describe below).  If an `EncryptRequest` procedure call returns a
+  `key_id` that is different from `Status`, the response is thrown away and the plugin is considered unhealthy.  Thus
+  implementations must guarantee that the `key_id` returned from `Status` will be the same as the one returned by
+  `EncryptRequest`.  Furthermore, plugins must ensure that the `key_id` is stable and does not flip-flop between values
+  (i.e. during a remote KEK rotation).
 
-  TODO Rotation times
+  Plugins must not re-use `key_id`s, even in situations where a previously used remote KEK has been reinstated.  For
+  example, if a plugin was using `key_id=A`, switched to `key_id=B`, and then went back to `key_id=A` - instead of
+  reporting `key_id=A` the plugin should report some derivative value such as `key_id=A_001` or use a new value such
+  as `key_id=C`.
+
+  Since the API server polls `Status` about every minute, `key_id` rotation is not immediate.  Furthermore, the API
+  server will coast on the last valid state for about three minutes.  Thus if a user wants to take a passive approach
+  to storage migration (i.e. by waiting), they must schedule a migration to occur at `3 + N + M` minutes after the
+  remote KEK has been rotated (`N` is how long it takes the plugin to observe the `key_id` change and `M` is the
+  desired buffer to allow config changes to be processed - a minimum `M` of five minutes is recommend).  Note that no
+  API server restart is required to perform KEK rotation.
 
 * protocol: UNIX domain socket (`unix`)
 
