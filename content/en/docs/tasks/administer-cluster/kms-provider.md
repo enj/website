@@ -173,7 +173,7 @@ Then use the functions and data structures in the stub file to develop the serve
   plugin implementations must perform these calls as quickly as possible, and should aim to keep each request's latency
   at under 10 milliseconds.
 
-* Understanding `key_id`
+* Understanding `key_id` and Key Rotation
 
   The `key_id` is the public, non-secret name of the remote KMS KEK that is currently in use.  It may be logged
   during regular operation of the API server, and thus must not contain any private data.  Plugin implementations
