@@ -82,7 +82,11 @@ resulting in the same nonce being used again.
 Although both of these cases are partially mitigated by the 4 byte random nonce, this can compromise 
 the security of the encryption.
 
-When `--feature-gates=KMSv2KDF=true` is set, KMS v2 generates single use data encryption keys from a secret seed.  This eliminates the need for a counter based nonce while avoiding nonce collision concerns.  It also removes any specific concerns with using KMS v2 and VM state store.
+If you have enabled the `KMSv2KDF`
+[feature gate](/docs/reference/command-line-tools-reference/feature-gates/) _and_ are using KMS v2
+(not KMS v1), the API server generates single use data encryption keys from a secret seed.
+This eliminates the need for a counter based nonce while avoiding nonce collision concerns.
+It also removes any specific concerns with using KMS v2 and VM state store.
 
 {{< /caution >}}
 
