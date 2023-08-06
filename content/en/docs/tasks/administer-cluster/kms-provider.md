@@ -234,7 +234,8 @@ Then use the functions and data structures in the stub file to develop the serve
   API server restart is required to perform KEK rotation.
 
   {{< caution >}}
-  Because you don't control the number of writes performed with the DEK, we recommend rotating the KEK at least every 90 days.
+  Because you don't control the number of writes performed with the DEK, 
+  the Kubernetes project recommends rotating the KEK at least every 90 days.
   {{< /caution >}}
 
 * protocol: UNIX domain socket (`unix`)
