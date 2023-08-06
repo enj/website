@@ -50,7 +50,8 @@ enabled will result in data loss.
 {{< /caution >}}
 
 {{< caution >}}
-Running mixed API server versions with some servers at v1.27 and others at v1.28 with the `--feature-gates=KMSv2KDF=true` flag set is not supported and will result in data loss.
+Running mixed API server versions with some servers at v1.27, and others at v1.28 _with the
+`KMSv2KDF` feature gate enabled_  is **not supported** - and is likely to result in data loss.
 {{< /caution >}}
 
 <!-- steps -->
