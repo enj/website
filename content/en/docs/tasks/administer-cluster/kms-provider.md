@@ -47,9 +47,9 @@ Set `--feature-gates=KMSv2=true` to configure a KMS v2 provider.
 The KMS v2 API and implementation changed in incompatible ways in-between the alpha release in v1.25
 and the beta release in v1.27.  Attempting to upgrade from old versions with the alpha feature
 enabled will result in data loss.
-{{< /caution >}}
 
-{{< caution >}}
+---
+
 Running mixed API server versions with some servers at v1.27, and others at v1.28 _with the
 `KMSv2KDF` feature gate enabled_  is **not supported** - and is likely to result in data loss.
 {{< /caution >}}
