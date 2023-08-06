@@ -68,7 +68,10 @@ as the Kubernetes control plane, is responsible for all communication with the r
 
 {{< caution >}}
 
-If you are running virtual machine (VM) based nodes that leverage VM state store with this feature, you must not use KMS v2 without setting `--feature-gates=KMSv2KDF=true`.
+If you are running virtual machine (VM) based nodes that leverage VM state store with this feature,
+using KMS v2 is **insecure** and an information security risk unless you also explicitly enable
+the `KMSv2KDF`
+[feature gate](/docs/reference/command-line-tools-reference/feature-gates/).
 
 With KMS v2, the API server uses AES-GCM with a 12 byte nonce (8 byte atomic counter and 4 bytes random data) for encryption. 
 The following issues could occur if the VM is saved and restored:
