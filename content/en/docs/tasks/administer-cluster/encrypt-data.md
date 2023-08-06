@@ -195,7 +195,7 @@ The following table describes each available provider:
   <td colspan="4">Not recommended for use except when an automated key rotation scheme is implemented. Key material accessible from control plane host.</td>
   </tr>
   <tr>
-  <th rowspan="2" scope="row"><tt>kms</tt> v1 <em>(deprecated in v1.28)</em></th>
+  <th rowspan="2" scope="row"><tt>kms</tt> v1 <em>(deprecated since Kubernetes v1.28)</em></th>
   <td>Uses envelope encryption scheme with DEK per resource.</td>
   <td>Strongest</td>
   <td>Slow (<em>compared to <tt>kms</tt> version 2</em>)</td>
