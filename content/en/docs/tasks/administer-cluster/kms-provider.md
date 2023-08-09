@@ -38,10 +38,12 @@ you have selected.
 
 * For version 1.25 and 1.26, enabling the feature via kube-apiserver feature gate is required.
 Set `--feature-gates=KMSv2=true` to configure a KMS v2 provider.
-
+ For environments where all API servers are running version 1.28 or later, and you do not require the ability
+ to downgrade to Kubernetes v1.27, you can enable the `KMSv2KDF` feature gate (a beta feature) for more
+ robust data encryption key generation. The Kubernetes project recommends enabling KMS v2 KDF if those
+ preconditions are met.
+ 
 * Your cluster must use etcd v3 or later
-
-* For environments where all API servers are v1.28+ and downgrade support is not required, set `--feature-gates=KMSv2KDF=true` for more robust data encryption key generation.
 
 {{< caution >}}
 The KMS v2 API and implementation changed in incompatible ways in-between the alpha release in v1.25
