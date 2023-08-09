@@ -64,7 +64,10 @@ The data is encrypted using a data encryption key (DEK).
 The DEKs are encrypted with a key encryption key (KEK) that is stored and managed in a remote KMS.
 With KMS v1, a new DEK is generated for each encryption.
 With KMS v2, a new DEK is generated on server startup and when the KMS plugin informs the API server
-that a KEK rotation has occurred (see `Understanding key_id and Key Rotation` section below).  When `--feature-gates=KMSv2KDF=true` is set, KMS v2 uses a key derivation function to generate single use data encryption keys from a secret seed combined with some random data.
+that a KEK rotation has occurred (see `Understanding key_id and Key Rotation` section below).
+When you enable the `KMSv2KDF` [feature gate](/docs/reference/command-line-tools-reference/feature-gates/),
+KMS v2 uses a key derivation function to generate single use data encryption keys
+from a secret seed combined with some random data.
 The KMS provider uses gRPC to communicate with a specific KMS plugin over a UNIX domain socket.
 The KMS plugin, which is implemented as a gRPC server and deployed on the same host(s)
 as the Kubernetes control plane, is responsible for all communication with the remote KMS.
