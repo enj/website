@@ -8,9 +8,10 @@ weight: 370
 ---
 <!-- overview -->
 This page shows how to configure a Key Management Service (KMS) provider and plugin to enable secret data encryption.
-Currently there are two KMS API versions. New integrations that only need to support Kubernetes v1.27+ 
-should use KMS v2 as it offers significantly better performance characteristics than v1
-(note the `Caution` sections below for specific cases when KMS v2 must not be used.)  v1 is deprecated as of Kubernetes v1.28.
+In Kubernetes {{< skew currentVersion >}} there are two versions of KMS at-rest encryption.
+You should use KMS v2 if feasible because KMS v1 is deprecated (since Kubernetes v1.28).
+However, you should also read and observe the **Caution** notices in this page that highlight specific
+cases when you must not use KMS v2.  KMS v2 offers significantly better performance characteristics than KMS v1.
 
 ## {{% heading "prerequisites" %}}
 
